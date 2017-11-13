@@ -1,0 +1,540 @@
+---
+title: "ML_Hackathon"
+author: "Gazal"
+date: "10 November 2017"
+output: html_document
+---
+
+```{r libraries}
+#rm(list = ls())
+library(mice)
+library(VIM)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(tree)
+library(e1071)
+library(class)
+library(randomForest)
+```
+
+```{r globals}
+color_v=c("gray37","burlywood3","peachpuff4",
+          "chocolate1","darkgoldenrod1","coral2",
+          "mediumorchid1","cadetblue")
+getmode <- function(v)
+{
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+pMiss <- function(x){sum(is.na(x))/length(x)*100} 
+
+```
+# Getting Dataset
+
+Data Cleaning Approach:
+1) dataset had error(useless replication) in label data which was replaced with accordingly.
+
+2) Missing values in occupation and workclass found co-related and conclusion was replaced for each of the values in factor form
+
+3) nativecountry field had several level which found to have insignificant effect on output with random forest therefore it was removed 
+
+```{r dataset}
+file_path = "D:/STUDY/hackathon/ML/Model_Data.csv"
+dataset <- read.csv(file_path)
+
+ head(dataset)
+# str(dataset)
+# summary(dataset)
+dataset$COMPENSATION <- as.character(dataset$COMPENSATION)
+dataset$COMPENSATION[dataset$COMPENSATION == " <=50K."] = " <=50K"
+dataset$COMPENSATION[dataset$COMPENSATION == " >50K."] = " >50K"
+dataset$COMPENSATION <- as.factor(dataset$COMPENSATION)
+head(dataset$COMPENSATION)
+
+# dataset %>%
+#   filter(occupation != " ?" | age != " ?" | workclass != " ?" | fnlwgt != " ?" | education != " ?" | educationnum	!= " ?" | maritalstatus != " ?" |	occupation != " ?" |	relationship	!= " ?" | race != " ?" |	sex != " ?" |	capitalgain != " ?" |	hoursperweek	!= " ?" | COMPENSATION != " ?" ) -> dataset
+
+
+dataset %>%
+  mutate(occupation = ifelse(occupation == " ?", " None", occupation),
+         workclass = ifelse(dataset$workclass ==  " ?"," Never-worked", workclass)) %>%
+  mutate(occupation = as.factor(occupation),
+         workclass = as.factor(workclass) )-> dataset
+drops = c("nativecountry")
+dataset[ , !(names(dataset) %in% drops)] -> dataset
+
+```
+
+# data spliting -
+
+random sampling in 80 x 20 ratio
+
+```{r datasplit}
+
+# step 6: train and test data
+
+  data_size <- nrow(dataset)
+  smp_size <- floor(0.8 * data_size)
+
+  # set the seed to make your partition reproductible
+  
+  set.seed(07)
+  train_index <- sample(seq_len(data_size), size = smp_size)
+  
+  train <- dataset[train_index, ]
+  test <- dataset[-train_index, ]
+```
+
+# data preparation
+
+```{r data preparation}
+#str(train)
+#nrow(train)
+
+drops = c("nativecountry")
+train[ , !(names(train) %in% drops)] -> train_sub
+
+str(train_sub)
+nrow(train_sub)
+
+# ggplot(train_sub, aes(x=education,
+#                     y=education.num,
+#                     color=education)) +
+#   geom_jitter()
+
+ #randomforest.model = randomForest(COMPENSATION ~ . , data = train_sub)
+
+ #randomforest.model$Importance -> imp_var
+ 
+ #varImpPlot(randomforest.model)
+```
+
+# plots : 
+
+1) imputation plot - for missing values
+2) corelation plot - for co-relation between  numerical data and later to compare with factors as numericals
+3) univariate plots -
+    1) scatterplot, histogram, boxplot for continuous data
+    2) bar chart and pie chart for categorical data
+    3) line chart to see trend of accuracy in knn with change of k
+4) bivariate plots
+    1) scatterplot, boxplot and bar chart as per the combination of data
+
+```{r continuous, message=FALSE, warning=FALSE}
+# # dataset of continuous variables of data
+# int_df <- Filter(is.numeric, train_sub)
+# #print(head(int_df))
+# 
+# #int_df <- int_df[c(-1,-2)]
+# 
+# # continuous variable colnames
+# sdf_cols_int <- colnames(int_df)
+# 
+# print(sdf_cols_int)
+# 
+# for(i in 1:ncol(int_df))
+# {
+#   # remove null from column
+#   column_name = sdf_cols_int[i]
+#   cat("\n\n column : ",column_name)
+#   
+#   column_int_df = int_df[i]
+#   column_int_df = column_int_df[!apply(is.na(column_int_df) |
+#                                              column_int_df == "", 1, all),]
+#   
+#   # count of total values
+#   total_count_column = nrow(int_df[i])
+#   
+#   # count of null values  
+#   column_int_df_null_count = total_count_column - length(column_int_df)
+# 
+#   # percentage of null in column
+#   column_null_perc = column_int_df_null_count/total_count_column
+#   cat("\n null value percentage : ", column_null_perc)
+#   
+#   # range of column
+#   column_range = range(column_int_df)
+#   cat("\n range : ", column_range)
+#   
+#   # printing quantile of column
+#   column_quantile = quantile(column_int_df)
+#   cat("\n quantile : ", column_quantile)
+#   
+#   # printing minimum of column
+#   column_min = min(column_int_df)
+#   cat("\n minimum : ", column_min)
+#   
+#   # printing maximum of column
+#   column_max = max(column_int_df)
+#   cat("\n maximum : ", column_max)
+#   
+#   # printing mean of column
+#   column_mean = mean(column_int_df)
+#   cat("\n mean : ", column_mean)
+#   
+#   # printing median of column
+#   column_median = median(column_int_df)
+#   cat("\n median : ", column_median)
+#   
+#   # printing mode of column using user defined function
+#   column_mode = getmode(column_int_df)
+#   cat("\n mode : ", column_mode)
+#     
+#   # Median Absolute Deviation
+#   column_mad = mad(column_int_df)
+#   cat("\n median absolute deviation : ", column_mad)
+#   
+#   # variance
+#   column_variance = var(column_int_df)
+#   cat("\n variance : ", column_variance)
+#   
+#   # standanrd deviation
+#   column_sd = sd(column_int_df)
+#   cat("\n standard deviance : ", column_sd)
+#   
+#   # understanding scattered data
+#   plot(column_int_df, xlab = column_name, ylab = "Values",
+#              col = color_v,
+#              main = paste("Scatter Plot for", column_name))
+#   # understanding frequency distribution of values
+#   hist(column_int_df, xlab = column_name, ylab = "Frequency",
+#              col = color_v,
+#              main = paste("Histogram for", column_name))
+#   
+#   # undertstanding outliers using boxplot
+#   boxplot(column_int_df, xlab = column_name,
+#                col=color_v)
+# }
+# 
+# head(int_df)
+# cor(int_df) -> cor_int_df
+# print(cor_int_df)
+# corrplot(cor_int_df,
+#          method = "color",
+#          order = "hclust",
+#          addrect = 3)
+
+```
+```{r categorical, message=FALSE, warning=FALSE}
+# factor_df <- Filter(is.factor, train_sub)
+# 
+# # removing name and email id as they are not very much useful for analysis
+# #factor_df <- factor_df[c(-1,-2)]
+# 
+# # factor variable colnames
+# sdf_cols_factor <- colnames(factor_df)
+# 
+# print(sdf_cols_factor)
+# 
+# for(i in 1:length(sdf_cols_factor))
+# {
+#   column_name = sdf_cols_factor[i]
+#   cat("\n\n Factor : ")
+#   print(column_name)
+#   column_factor_df = as.factor(factor_df[,i])
+# 
+#   # count of total values
+#   total_count_column = nrow(factor_df[i])
+#   
+#   cat("\n levels : ")
+#   print(levels(column_factor_df))
+#   
+#   cat("\n number of levels : ")
+#   print(nlevels(column_factor_df))
+#   
+#   cat("\n Orders? : ")
+#   print(is.ordered(column_factor_df))
+#   
+#   mode_fac = getmode(column_factor_df)
+#   cat("\n Mode : ")
+#   print(mode_fac)
+#   
+#   count_fac = count(column_factor_df)
+#   print(count_fac)
+#   
+#   # understanding frequency
+#   barplot(prop.table(table(column_factor_df)))  
+#   
+#   # understanding relative frequency of values
+#   
+#   labels <- count_fac$x
+#   x <- count_fac$freq
+#   
+#   pie(x, labels, main = column_name, col = rainbow(length(x)))
+# 
+# }
+
+```
+  
+```{r bivariate plots, echo=FALSE, message=FALSE, warning=FALSE}
+# total_cols = ncol(train_sub)
+# total_col_names = colnames(train_sub)
+# 1:total_cols
+# 
+#  i = 1
+#  for(i in i:total_cols)
+#  {
+#    for(j in 1:total_cols)
+#    {
+#    plot(x = train_sub[,i],
+#       y = train_sub[,j],
+#       xlab = total_col_names[i],
+#       ylab = total_col_names[j])
+#    plot(y = train_sub[,i],
+#       x = train_sub[,j],
+#       ylab = total_col_names[i],
+#       xlab = total_col_names[j])
+#    } 
+#  }
+
+```
+
+```{r null - imputation}
+
+#   pMiss <- function(x){sum(is.na(x))/length(x)*100} 
+#   apply(train_sub,2,pMiss) 
+# 
+# data_pattern = md.pattern(train_sub)
+# 
+# print(train_sub)
+# 
+# imputation_plot = aggr(train_sub,
+#                        col = color_v,
+#                        numbers = TRUE,
+#                        sortVars = FALSE,
+#                        labels = names(train_sub),
+#                        cex.axis = 0.9,
+#                        gap = 2,
+#                        ylabs = c("Missing Data","Pattern"))
+# print(imputation_plot)
+```
+
+# model 1 - Decision Tree
+
+```{r model1 - decision tree}
+
+  tree.model = tree(COMPENSATION ~ . , data = train_sub)
+
+# step 8: view model
+
+  # model text and summary  
+  print(tree.model)
+  print(summary(tree.model))
+  
+  # plot model
+  plot(tree.model)
+  text(tree.model)
+  
+  #library(rpart.plot)
+  #prp(tree.model, extra=7, prefix="fraction\n")
+
+# step 9: predict for test data
+
+  #Predict Output
+  
+  model_prediction = predict(tree.model,test)
+  
+  maxidx = function(arr)
+  {
+    return(which(arr == max(arr)))
+  }
+  
+  idx = apply(model_prediction, c(1), maxidx)
+  
+  predicted = c('No','Yes')[idx]
+  confmat =  table(predicted, test$COMPENSATION)
+  
+  print(confmat)
+  
+  # step 10: check accuracy
+  model_accuracy = sum(diag(confmat))/sum(confmat)
+  
+  print(model_accuracy)
+  
+```
+# Decision Tree accuracy
+
+```{r model1 accuracy}
+cat("\n",model_accuracy)
+
+```
+
+# model 2 - Naive bayes
+
+```{r model2 - naive bayes}
+  naiveBayesModel <- naiveBayes(COMPENSATION ~ .,
+                                 data = train_sub) 
+    
+  print(naiveBayesModel)
+  
+  prediction = predict(naiveBayesModel,
+                         test[,-1])
+    
+  #print(prediction)
+  confmat = table(prediction,test$COMPENSATION)
+  
+  #print(confmat)
+  
+  accuracy = sum(diag(confmat)) / sum(confmat)
+
+  print(accuracy)
+```
+
+# Naive Baye accuracy
+
+```{r nb accuracy}
+cat("\n",accuracy)
+```
+
+```{r dataset1}
+
+file_path = "D:/STUDY/hackathon/ML/Assignment\ -\ 3 update/Model_Data.csv"
+ dataset <- read.csv(file_path)
+
+  head(dataset)
+ # str(dataset)
+ # summary(dataset)
+ dataset$COMPENSATION <- as.character(dataset$COMPENSATION)
+ dataset$COMPENSATION[dataset$COMPENSATION == " <=50K."] = " <=50K"
+ dataset$COMPENSATION[dataset$COMPENSATION == " >50K."] = " >50K"
+ dataset$COMPENSATION <- as.factor(dataset$COMPENSATION)
+ head(dataset$COMPENSATION)
+ dataset %>%
+   mutate(occupation = ifelse(occupation == " ?", " None", occupation),
+          workclass = ifelse(dataset$workclass ==  " ?"," Never-worked", workclass)) %>%
+   mutate(occupation = as.factor(occupation),
+          workclass = as.factor(workclass) )-> dataset
+
+
+ drops = c("nativecountry")
+ dataset[ , !(names(dataset) %in% drops)] -> dataset
+
+
+   data_size <- nrow(dataset)
+   smp_size <- floor(0.8 * data_size)
+
+   # set the seed to make your partition reproductible
+
+   set.seed(07)
+   train_index <- sample(seq_len(data_size), size = smp_size)
+
+     train <- dataset[train_index, ]
+   test <- dataset[-train_index, ]
+  
+  test[ , !(names(test) %in% drops)] -> test_sub
+   train[ , !(names(train) %in% drops)] -> train_sub
+
+```
+
+#model 3 kNN 
+
+```{r model3 - knn}
+#head(train_sub)
+
+#fact_df <- fact_df[,-c(ncol(fact_df))]
+for(i in 1:(ncol(train_sub)-1))
+{
+  if(is.factor(train_sub[,i]))
+  {
+    train_sub[,i] <- as.numeric(train_sub[,i]) 
+    test_sub[,i] <- as.numeric(test_sub[,i])
+  }
+}
+# 
+# for(i in 1:(ncol(test)-1))
+# {
+#   if(is.factor(test[,i]))
+#   {
+#     test[,i] <- as.numeric(test[,i]) 
+#   }
+# }
+
+train_independent =  Filter(is.numeric, train_sub)
+ncol(train_sub) -> n
+train_dependent = train_sub[,n]
+
+test_independent <-  Filter(is.numeric, test_sub)
+
+test_dependent = test[,n]
+
+#null value percentage
+apply(train_independent,2,pMiss)
+
+# choose value for number of nearest neighbor k
+
+#k= 5
+
+for(i in seq(1,20,by=1))
+{
+  k = i
+ knn(train_independent,
+     test = test_independent,
+     cl = train_dependent,
+     k) -> knn_model_predicted_labels
+
+  confmat = table(test_dependent,knn_model_predicted_labels)
+  
+  #print(confmat)
+  
+  accuracy[k] = sum(diag(confmat)) / sum(confmat)
+  cat("\naccuracy at",k, " is ",accuracy[k])
+}
+  
+  plot(accuracy, type ="l")
+  
+  correlationMatrix <- cor(train_independent)
+# summarize the correlation matrix
+
+  print(correlationMatrix)
+
+# corrplot(correlationMatrix,
+#          method = "color",
+#          order = "hclust",
+#          addrect = 4)
+
+```
+# knn accuracy
+
+```{r knn accuracy}
+cat("\n",accuracy[16])
+```
+```{r random}
+# randomforest.model = randomForest(COMPENSATION ~ . , data = train_sub)
+# 
+# randomforest.model$Importance -> imp_var
+#  
+# varImpPlot(randomforest.model)
+```
+
+# Generalization : 
+
+Generalization is a term used to describe a model's ability to react to new data. That is, after being trained on a training set, a model can digest new data and make accurate predictions. A model's ability to generalize is central to the success of a model.
+
+If a model has been trained too well on training data, it will be unable to generalize.  It will make inaccurate predictions when given new data, making the model useless even though it is able to make accurate predictions for the training data. This is called overfitting. In this problem statement, getting more than 90% accuracy on test data would be clearly overfitting
+
+Underfitting happens when a model has not been trained enough on the data. In the case of underfitting, it makes the model just as useless and it is not capable of making accurate predictions, even with the training data.
+
+Therefore, the model needs to note a trend in the data, in a way that it doesn't become too specific and it can nearly predict the coming new data.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

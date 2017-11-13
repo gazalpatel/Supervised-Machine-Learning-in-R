@@ -1,0 +1,22 @@
+age,workclass,fnlwgt,education,education-num,marital-status,occupation,relationship,race,sex,capital-gain,capital-loss,hours-per-week,native-country,COMPENSATION
+43, Private,346189, Masters,14, Married-civ-spouse, Exec-managerial, Husband, White, Male,0,0,50, United-States, >50K.
+25, Private,220931, Bachelors,13, Never-married, Prof-specialty, Not-in-family, White, Male,0,0,43, Peru, <=50K.
+23, Private,134446, HS-grad,9, Separated, Machine-op-inspct, Unmarried, Black, Male,0,0,54, United-States, <=50K.
+65, Private,136384, Masters,14, Married-civ-spouse, Prof-specialty, Husband, White, Male,0,0,50, United-States, >50K.
+22, Private,54164, HS-grad,9, Never-married, Other-service, Not-in-family, White, Male,14084,0,60, United-States, >50K.
+34, Local-gov,382078, Bachelors,13, Married-civ-spouse, Exec-managerial, Husband, White, Male,3103,0,50, United-States, >50K.
+33, Private,269705, HS-grad,9, Married-civ-spouse, Handlers-cleaners, Husband, White, Male,0,0,40, United-States, <=50K.
+43, Private,170482, HS-grad,9, Separated, Machine-op-inspct, Not-in-family, White, Female,0,0,44, United-States, <=50K.
+49, Private,171128, 7th-8th,4, Married-civ-spouse, Machine-op-inspct, Husband, Black, Male,0,0,40, United-States, <=50K.
+33, Private,145402, HS-grad,9, Married-civ-spouse, Machine-op-inspct, Wife, White, Female,0,0,35, United-States, <=50K.
+31, Private,236861, Some-college,10, Married-civ-spouse, Sales, Husband, White, Male,0,0,55, United-States, >50K.
+39, Private,282951, HS-grad,9, Never-married, Craft-repair, Unmarried, White, Male,0,0,40, United-States, <=50K.
+80, Self-emp-not-inc,201092, HS-grad,9, Married-civ-spouse, Other-service, Husband, White, Male,0,0,30, United-States, <=50K.
+34, Private,147215, Assoc-voc,11, Divorced, Tech-support, Unmarried, White, Female,0,0,60, United-States, <=50K.
+44, Private,184527, Bachelors,13, Divorced, Exec-managerial, Unmarried, White, Female,4934,0,45, United-States, >50K.
+51, Private,43354, Some-college,10, Divorced, Craft-repair, Not-in-family, White, Male,0,0,42, United-States, >50K.
+35, Private,249456, Bachelors,13, Never-married, Adm-clerical, Own-child, Black, Female,0,0,40, United-States, <=50K.
+36, Private,116358, Masters,14, Married-civ-spouse, Exec-managerial, Husband, Asian-Pac-Islander, Male,0,0,45, India, <=50K.
+21, Private,345253, Some-college,10, Never-married, Adm-clerical, Not-in-family, Other, Male,2174,0,40, United-States, <=50K.
+65, Self-emp-not-inc,178878, HS-grad,9, Married-civ-spouse, Farming-fishing, Husband, White, Male,0,0,48, United-States, <=50K.
+39, Private,195843, Assoc-voc,11, Never-married, Machine-op-inspct, Own-child, White, Male,0,0,40, United-States, <=50K.
